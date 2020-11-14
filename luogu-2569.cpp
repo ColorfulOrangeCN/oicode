@@ -1,8 +1,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 constexpr int maxn = 2e3 + 1;
-int f[maxn][maxn];
-int AP[maxn], BP[maxn], AS[maxn], BS[maxn];
+typedef long long inte;
+inte f[maxn][maxn];
+inte AP[maxn], BP[maxn], AS[maxn], BS[maxn];
 
 struct MonQue {
     deque<pair<int, int>> q;
@@ -16,6 +17,7 @@ struct MonQue {
             q.pop_front();
         return q.front().first;
     }
+    bool empty() {return q.empty();}
 };
 
 int main(int argc, char *argv[])
@@ -25,18 +27,20 @@ int main(int argc, char *argv[])
     for (int i = 1; i <= T; ++i)
         cin >> AP[i] >> BP[i] >> AS[i] >> BS[i];
     memset(f, -0x3f, sizeof(f));
-    for (int i = 0; i <= min(W, T); ++i)
-        for (int p = 0; p <= AS[i]; ++p)
-            f[i][p] = -AP[i] * p;
-    for (int i = W + 1; i <= T; ++i) {
+    f[0][0] = 0;
+    for (int i = 1; i <= T; ++i) {
         MonQue qs, qb;
+        for (int p = 0; p <= maxP; ++p)
+            f[i][p] = max(f[i][p], f[i - 1][p]);
         for (int p = 0; p <= maxP; ++p) {
-            qb.push(make_pair(f[i - W - 1][p] + AP[i] * p, p));
-            f[i][p] = max(max(f[i - 1][p], f[i][p]), qb.front(p - AS[i], p) - AP[i] * p);
+            qb.push(make_pair(f[max(i - W - 1, 0)][p] + AP[i] * p, p));
+            if (!qb.empty())
+                f[i][p] = max(f[i][p], qb.front(p - AS[i], p) - AP[i] * p);
         }
         for (int p = maxP; p >= 0; --p) {
-            qs.push(make_pair(f[i - W - 1][p] + BP[i] * p, p));
-            f[i][p] = max(max(f[i - 1][p], f[i][p]), qb.front(p, p + BS[i]) - BP[i] * p);
+            qs.push(make_pair(f[max(i - W - 1, 0)][p] + BP[i] * p, p));
+            if (!qs.empty())
+                f[i][p] = max(f[i][p], qs.front(p, p + BS[i]) - BP[i] * p);
         }
     }
     cout << f[T][0] << endl;
