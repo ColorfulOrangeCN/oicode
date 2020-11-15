@@ -7,9 +7,8 @@ int main()
     cin >> N;
     vector<int> mark, data, f(N, 0);
     copy_n(istream_iterator<int>(cin), N, back_inserter(data));
-    //reverse(data.begin(), data.end());
     for (int i = N - 1; i >= 0; --i) {
-        auto it = upper_bound(begin(mark), end(mark), data[i], greater<int>());
+        auto it = lower_bound(begin(mark), end(mark), data[i], greater<int>());
         if (it == end(mark))
             mark.push_back(data[i]), f[i] = mark.size();
         else
