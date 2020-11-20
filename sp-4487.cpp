@@ -9,19 +9,19 @@ struct FHQTreap {
         void update() {
             if (lc && rc) {
                 sum = lc->sum + rc->sum + x;
-                maxsec = max({lc->maxsec, rc->maxsec, lc->rsec + x + rc->lsec});
+                maxsec = max({x, lc->maxsec, rc->maxsec, max(lc->rsec, 0) + x + max(rc->lsec, 0)});
                 lsec = max(lc->lsec, lc->sum + x + max(rc->lsec, 0));
                 rsec = max(rc->rsec, rc->sum + x + max(lc->rsec, 0));
                 size = lc->size + rc->size + 1;
             } else if (lc) {
                 sum = lc->sum + x;
-                maxsec = max(lc->maxsec, lc->rsec + x);
+                maxsec = max({x, lc->maxsec, lc->rsec + x});
                 lsec = max(lc->lsec, lc->sum + x);
                 rsec = max(x, lc->rsec + x);
                 size = lc->size + 1;
             } else if (rc) {
                 sum = rc->sum + x;
-                maxsec = max(rc->maxsec, rc->rsec + x);
+                maxsec = max({x, rc->maxsec, rc->lsec + x});
                 rsec = max(rc->rsec, rc->sum + x);
                 lsec = max(x, rc->lsec + x);
                 size = rc->size + 1;
@@ -44,7 +44,7 @@ struct FHQTreap {
             return l;
         }
         assert(l && r);
-        cerr << "MERGE " << l->x << ' ' << r->x << endl;
+        // cerr << "MERGE " << l->x << ' ' << r->x << endl;
         if (l->py > r->py) {
             l->rc = merge(l->rc, r);
             l->update();
@@ -56,20 +56,22 @@ struct FHQTreap {
         }
     }
     pair<NP, NP> split(NP rt, int sz) {
-        cerr << "BEFORE SPLIT "<< rt << ' ' << sz << endl;
+        // cerr << "BEFORE SPLIT "<< rt << ' ' << sz << endl;
         if (!rt)
             return make_pair(nullptr, nullptr);
         assert(rt->size >= sz);
-        cerr << "SPLIT " << rt->size << ' ' << rt->x << ' ' << sz << endl;
+        // cerr << "SPLIT " << rt->size << ' ' << rt->x << ' ' << sz << endl;
         if ((rt->lc ? rt->lc->size : 0) + 1 <= sz) {
             pair<NP, NP> res = split(rt->rc, sz - (rt->lc ? rt->lc->size : 0) - 1);
             rt->rc = res.first;
             rt->update();
+            assert(rt->size == sz);
             return make_pair(rt, res.second);
         } else {
             pair<NP, NP> res = split(rt->lc, sz);
             rt->lc = res.second;
             rt->update();
+            assert(res.first == nullptr && sz == 0 || res.first->size == sz);
             return make_pair(res.first, rt);
         }
     }
@@ -79,17 +81,17 @@ struct FHQTreap {
         return nodes + (newp++);
     }
     NP insert(Node *t, int p) {
-        cerr << root->size << endl;
+        // cerr << root->size << endl;
         pair<NP, NP> res = split(root, p - 1);
-        cerr << "INSERT "<< res.first->size << ' ' << res.second << endl;
         root = merge(res.first, merge(t, res.second));
-        cerr << "AFTER INSERT " << root->size << endl;
+        // cerr << "AFTER INSERT " << root->size << endl;
         return t;
     }
     NP erase(int p) {
         pair<NP, NP> res1 = split(root, p);
-        cerr << res1.first->size << endl;
-        pair<NP, NP> res2 = split(res1.first, 1);
+        // cerr << res1.first->size << endl;
+        pair<NP, NP> res2 = split(res1.first, p - 1);
+        assert(res2.second);
         assert(res2.second && res2.second->size == 1);
         root = merge(res2.first, res1.second);
         return res2.second;
@@ -97,9 +99,22 @@ struct FHQTreap {
     int getans(int l, int r) {
         pair<NP, NP> res1 = split(root, r), res2 = split(res1.first, l - 1);
         assert(res2.second);
+        res2.second->update();
         int ans = res2.second->maxsec;
+        //debug(res2.second);
         root = merge(merge(res2.first, res2.second), res1.second);
         return ans;
+    }
+    void debug(NP r) {
+        cerr << "left" << endl;
+        if (r->lc)
+            debug(r->lc);
+        cerr << "leave" << endl;
+        cerr << r->x << ' ' << r->maxsec << ' ' << r->lsec << ' ' << r->rsec << endl;
+        cerr << "right" << endl;
+        if (r->rc)
+            debug(r->rc);
+        cerr << "leave" << endl;
     }
 } fhq;
 int main() {
@@ -125,14 +140,13 @@ int main() {
             fhq.erase(x);
         } else if (op == 'R') {
             cin >> y;
-            FHQTreap::NP t = fhq.erase(x);
-            t->x = y;
-            t->update();
-            fhq.insert(t, x);
+            fhq.erase(x);
+            fhq.insert(fhq.getNode(y), x);
         } else {
             cin >> y;
             cout << fhq.getans(x, y) << '\n';
         }
+        //fhq.debug(fhq.root);
     }
     return 0;
 }
