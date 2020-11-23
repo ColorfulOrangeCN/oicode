@@ -73,17 +73,19 @@ signed main()
 {
     ios::sync_with_stdio(false);
     cin.tie(0);
-    int N, M;
-    cin >> N >> M;
+    int N;
+    cin >> N;
     copy_n(istream_iterator<long long>(cin), N, A + 1);
     for (int i = 1; i <= N; ++i)
         segt.modify(1, 1, N, i, i, A[i]);
+    int M;
+    cin >> M;
     for (int i = 1; i <= M; ++i) {
         int op, a, b;
         cin >> op >> a >> b;
+        if (a > b)
+            swap(a, b);
         if (op == 1) {
-            if (a > b)
-                swap(a, b);
             cout << segt.query(1, 1, N, a, b).ans << '\n';
         } else {
             segt.modify(1, 1, N, a, a, b);
