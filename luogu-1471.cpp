@@ -5,9 +5,9 @@ struct SegmentTree {
   struct Node {
     double x, x2;
   } nodes[maxn * 4];
-  double lazy[maxn];
+  double lazy[maxn * 4];
   Node nadd(Node x, double v, int cnt) {
-    return Node{x.x + v, x.x2 + 2 * x.x * v + v * v * cnt};
+    return Node{x.x + v * cnt, x.x2 + 2 * x.x * v + v * v * cnt};
   }
 #define lc (k * 2)
 #define rc (lc + 1)
@@ -16,7 +16,7 @@ struct SegmentTree {
       lazy[lc] += lazy[k];
       lazy[rc] += lazy[k];
     }
-    nadd(nodes[k], lazy[k], r - l + 1);
+    nodes[k] = nadd(nodes[k], lazy[k], r - l + 1);
     lazy[k] = 0;
   }
   void modify(int k, int l, int r, int L, int R, double v) {
@@ -44,9 +44,34 @@ struct SegmentTree {
       const int mid = (l + r) / 2;
       Node a = query(lc, l, mid, L, R), b = query(rc, mid + 1, r, L, R);
       return Node{a.x + b.x, a.x2 + b.x2};
-    }   
+    }
   }
 } segt;
+typedef SegmentTree::Node Option;
 int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(0);
+  int N, M;
+  cin >> N >> M;
+  for (int i = 1; i <= N; ++i) {
+    double x;
+    cin >> x;
+    segt.modify(1, 1, N, i, i, x);
+  }
+  cout << fixed;
+  for (int i = 1; i <= M; ++i) {
+    int op, l, r;
+    cin >> op >> l >> r;
+    if (op == 1) {
+      double x;
+      cin >> x;
+      segt.modify(1, 1, N, l, r, x);
+    } else if (op == 2) {
+      cout << setprecision(4) << segt.query(1, 1, N, l, r).x / (r - l + 1) << '\n';
+    } else {
+      Option t = segt.query(1, 1, N, l, r);
+      cout << setprecision(4) << segt.nadd(t, -t.x / (r - l + 1), (r - l + 1)).x2 / (r - l + 1) << '\n';
+    }
+  }
   return 0;
 }
