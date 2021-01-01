@@ -19,7 +19,13 @@ struct FHQTreap {
       }
     }
     inline void maintain() {
-      
+      sum = ls = rs = ms = v;
+      if (l) {
+        sum += l->sum;
+        ls = max(l->ls, l->sum + v);
+        rs += max(l->rs, 0);
+        ms = max(l->ms, v + max(l->rs, 0))
+      }
     }
     Node() : l(nullptr), r(nullptr), sum(0), ls(0), rs(0), modi(disable), rev(0)  {}
   } nodes[maxn];
