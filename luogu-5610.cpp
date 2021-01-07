@@ -2,25 +2,42 @@
 using namespace std;
 constexpr int maxn = 1e5 + 5;
 typedef long long inte;
+
+struct Read {
+  template<typename T> inline const Read& operator()(T &x) const {
+    x = 0;
+    static char c = 0;
+    while (!isdigit(c))
+      c = getchar();
+    while (isdigit(c)) {
+      x *= 10;
+      x += c - '0';
+      c = getchar();
+    }
+    return *this;
+  }
+} read;
 int N, a[maxn];
+
 struct BIT {
   inte c[maxn];
-  inline int lowbit(int x) { return x & -x; }
-  void build() {
+#define lowbit(x) ((x) & (-(x)))
+  inline void build() {
     for (int i = 1; i <= N; ++i) {
-      cin >> a[i];
+      read(a[i]);
       c[i] = a[i];
-      for (int j = 1; j < lowbit(i); j *= 2)
+      const int t = lowbit(i);
+      for (int j = 1; j < t; j <<= 1)
         c[i] += c[i - j];
     }
   }
-  void add(int x, int v) {
+  inline void add(int x, int v) {
     while (x <= N) {
       c[x] += v;
       x += lowbit(x);
     }
   }
-  inte query(int l, int r) {
+  inline inte query(int l, int r) {
     --l;
     inte res = 0;
     while (r > l)
@@ -29,51 +46,92 @@ struct BIT {
       res -= c[l], l -= lowbit(l);
     return res;
   }
-  
 } bt;
-set<int> plc[5 * maxn];
-int main(int argc, char *argv[])
+int buf[400 * maxn], newp = 0;
+struct Cache {
+  int *l, *r;
+  inline void resize(int v) {
+    l = buf + newp;
+    newp += v;
+    r = buf + newp;
+  }
+  inline int* begin() {return l;}
+  inline int* end() {return r;}
+  inline int size() const {return r - l;}
+  inline int& operator[] (int x) {return l[x];}
+};
+struct SCache : Cache {
+  int c;
+  void push_back(int x) {
+    // cerr << c << endl;
+    l[c++] = x;
+  }
+};
+SCache gug[5 * maxn];
+Cache skp[5 * maxn];
+int step(int i, int j) {
+  if (j >= skp[i].size() || a[gug[i][j]] % i == 0)
+    return j;
+  else
+    return skp[i][j] = step(i, skp[i][j]);
+}
+int cnt[5 * maxn];
+signed main()
 {
   ios::sync_with_stdio(false);
   cin.tie(0);
   int M;
-  cin >> N >> M;
+  read(N)(M);
   bt.build();
   for (int i = 1; i <= N; ++i) {
-    plc[a[i]].insert(i);
+    ++cnt[a[i]];
     for (int j = 2; j * j <= a[i]; ++j) {
       if (a[i] % j == 0) {
-        plc[j].insert(i);
+        ++cnt[j];
         if (j * j != a[i])
-          plc[a[i] / j].insert(i);
+          ++cnt[a[i] / j];
       }
     }
+  }
+  for (int i = 1; i < 5 * maxn; ++i)
+    gug[i].resize(cnt[i]);
+  for (int i = 1; i <= N; ++i) {
+    gug[a[i]].push_back(i);
+    for (int j = 2; j * j <= a[i]; ++j) {
+      if (a[i] % j == 0) {
+        gug[j].push_back(i);
+        if (j * j != a[i])
+          gug[a[i] / j].push_back(i);
+      }
+    }
+  }
+  for (int i = 2; i < 5 * maxn; ++i) {
+    skp[i].resize(gug[i].size());
+    for (int j = 0; j < skp[i].size(); ++j)
+      skp[i][j] = j + 1;
   }
   inte lastans = 0;
   while (M--) {
     inte op, l, r;
-    cin >> op >> l >> r;
+    read(op)(l)(r);
     l ^= lastans;
     r ^= lastans;
     if (op == 1) {
       inte x;
-      cin >> x;
+      read(x);
       x ^= lastans;
-      auto it = plc[x].lower_bound(l), itr = plc[x].upper_bound(r);
-      while (it != itr) {
-        if (a[*it] % x) {
-          plc[x].erase(it++);
-        } else {
-          bt.add(*it, a[*it] / x - a[*it]);
-          a[*it] /= x;
-          if (a[*it] % x)
-            plc[x].erase(it++);
-          else
-            ++it;
-        }
+      if (x == 1 || !skp[x].size())
+        continue;
+      l = lower_bound(gug[x].begin(), gug[x].end(), l) - gug[x].begin();
+      r = lower_bound(gug[x].begin(), gug[x].end(), ++r) - gug[x].begin();
+      // cerr << l << ' ' << r << endl;
+      for (int i = step(x, l); i < r; i = step(x, ++i)) {
+        const int t = gug[x][i];
+        bt.add(t, a[t] / x - a[t]);
+        a[t] /= x;
       }
     } else {
-      cout << (lastans = bt.query(l, r)) << '\n';
+      printf("%lld\n", lastans = bt.query(l, r));
     }
   }
   return 0;
